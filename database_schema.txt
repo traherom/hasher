@@ -1,0 +1,25 @@
+nist
+- id
+- basename
+- md5
+- sha1
+- nistdb_version
+
+files
+- id
+- path
+- basename
+- md5
+- sha1
+- last_seen_date
+
+settings
+- key
+- value
+
+
+Setting keys:
+- use_nist: true/false
+- base_path: string path to prefix to all paths in files
+- auto_scan: true/false
+

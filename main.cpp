@@ -1,15 +1,15 @@
-#include <QCoreApplication>
+#include <QApplication>
+#include <QPushButton>
 #include <sqlite3.h>
+
+#include "filelistwindow.h"
 
 int main(int argc, char *argv[])
 {
-    QCoreApplication a(argc, argv);
+    QApplication a(argc, argv);
 
-    sqlite3 *db = NULL;
-    sqlite3_open("test.db", &db);
-
-
-    sqlite3_close(db);
+    FileListWindow mainWin;
+    mainWin.show();
 
     return a.exec();
 }
