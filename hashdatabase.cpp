@@ -2,6 +2,7 @@
 #include "sqlexception.h"
 
 #include <iostream>
+#include <functional>
 
 #include <boost/make_shared.hpp>
 #include <boost/shared_ptr.hpp>
@@ -38,10 +39,10 @@ HashDatabase::~HashDatabase()
 shared_ptr<HashDatabase> HashDatabase::createNew(string dbPath)
 {
     // TODO: refuse to overwrite existing file?
-    // TODO ensure db is closed during exceptions
 
     // Create db with schema
     sqlite3 *db = nullptr;
+    shared_ptr<sqlite3> dbProtector(db, std::ptr_fun(sqlite3_close));
     int err = sqlite3_open(dbPath.c_str(), &db);
     if(err) {
         throw SQLException("Unable to open database for creation", sqlite3_errmsg(db));
@@ -56,7 +57,6 @@ shared_ptr<HashDatabase> HashDatabase::createNew(string dbPath)
                             " Language varchar(1024)"
                           ")", nullptr, nullptr, nullptr);
     if(err) {
-        sqlite3_close(db);
         throw SQLException("Unable to create NSRL product table: ", sqlite3_errmsg(db));
     }
 
@@ -71,7 +71,6 @@ shared_ptr<HashDatabase> HashDatabase::createNew(string dbPath)
                             " Specialcode varchar(255)"
                         ")", nullptr, nullptr, nullptr);
     if(err) {
-        sqlite3_close(db);
         throw SQLException("Unable to create NSRL file table: ", sqlite3_errmsg(db));
     }
 
@@ -81,7 +80,6 @@ shared_ptr<HashDatabase> HashDatabase::createNew(string dbPath)
                             " date datetime"
                         ")", nullptr, nullptr, nullptr);
     if(err) {
-        sqlite3_close(db);
         throw SQLException("Unable to create scans table: ", sqlite3_errmsg(db));
     }
 
@@ -94,7 +92,6 @@ shared_ptr<HashDatabase> HashDatabase::createNew(string dbPath)
                              "sha1 char(32) "
                          ")", nullptr, nullptr, nullptr);
     if(err) {
-        sqlite3_close(db);
         throw SQLException("Unable to create files table: ", sqlite3_errmsg(db));
     }
 
@@ -103,7 +100,6 @@ shared_ptr<HashDatabase> HashDatabase::createNew(string dbPath)
                              "value varchar(255)"
                          ")", nullptr, nullptr, nullptr);
     if(err) {
-        sqlite3_close(db);
         throw SQLException("Unable to create settings table: ", sqlite3_errmsg(db));
     }
 
@@ -111,6 +107,8 @@ shared_ptr<HashDatabase> HashDatabase::createNew(string dbPath)
     if(sqlite3_close(db)) {
         std::cerr << "Error closing during new database creation, continuing on" << std::endl;
     }
+
+    db = nullptr;
 
     // Return new database object already set up
     return open(dbPath);
