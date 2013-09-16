@@ -68,12 +68,17 @@ void FileListWindow::createDatabasePrompt()
     QString dbPath;
     dbPath = QFileDialog::getSaveFileName(this, "Save new database", "", "Hasher database files (*.hashdb)");
 
-    if(!dbPath.isEmpty()) {
-        // Create!
-        boost::shared_ptr<HashDatabase> db = HashDatabase::createNew(dbPath.toStdString());
+    try {
+        if(!dbPath.isEmpty()) {
+            // Create!
+            boost::shared_ptr<HashDatabase> db = HashDatabase::createNew(dbPath.toStdString());
 
-    // Immediately open the new database
-        openDatabase(db);
+            // Immediately open the new database
+            openDatabase(db);
+        }
+    }
+    catch(SQLException e) {
+        std::cerr << e << std::endl;
     }
 }
 
@@ -83,8 +88,13 @@ void FileListWindow::openDatabasePrompt()
     QString dbPath;
     dbPath = QFileDialog::getOpenFileName(this, "Select database", "", "Hasher database files (*.hashdb)");
 
-    if(!dbPath.isEmpty()) {
-        openDatabase(dbPath);
+    try {
+        if(!dbPath.isEmpty()) {
+            openDatabase(dbPath);
+        }
+    }
+    catch(SQLException e) {
+        std::cerr << e << std::endl;
     }
 }
 
