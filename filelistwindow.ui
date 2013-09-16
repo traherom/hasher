@@ -14,10 +14,10 @@
    </rect>
   </property>
   <property name="windowTitle">
-   <string>MainWindow</string>
+   <string>Hasher</string>
   </property>
   <widget class="QWidget" name="centralwidget">
-   <layout class="QVBoxLayout" name="verticalLayout">
+   <layout class="QFormLayout" name="formLayout_5">
     <property name="leftMargin">
      <number>12</number>
     </property>
@@ -30,21 +30,8 @@
     <property name="bottomMargin">
      <number>12</number>
     </property>
-    <item>
+    <item row="0" column="0">
      <layout class="QHBoxLayout" name="horizontalLayout_2"/>
-    </item>
-    <item>
-     <widget class="QProgressBar" name="progressBar">
-      <property name="autoFillBackground">
-       <bool>false</bool>
-      </property>
-      <property name="value">
-       <number>24</number>
-      </property>
-      <property name="invertedAppearance">
-       <bool>false</bool>
-      </property>
-     </widget>
     </item>
    </layout>
   </widget>
@@ -76,7 +63,7 @@
    <addaction name="menuNist"/>
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
-  <widget class="QDockWidget" name="dockWidget">
+  <widget class="QDockWidget" name="dbControlDock">
    <property name="features">
     <set>QDockWidget::DockWidgetFloatable|QDockWidget::DockWidgetMovable</set>
    </property>
@@ -86,7 +73,7 @@
    <attribute name="dockWidgetArea">
     <number>1</number>
    </attribute>
-   <widget class="QWidget" name="dockWidgetContents">
+   <widget class="QWidget" name="dbControlDockContents">
     <property name="enabled">
      <bool>true</bool>
     </property>
@@ -123,7 +110,7 @@
       </layout>
      </item>
      <item>
-      <widget class="QTabWidget" name="databaseTab">
+      <widget class="QTabWidget" name="databaseTabs">
        <property name="enabled">
         <bool>false</bool>
        </property>
@@ -142,23 +129,26 @@
        <property name="movable">
         <bool>false</bool>
        </property>
-       <widget class="QWidget" name="statusTab">
+       <widget class="QWidget" name="scansTab">
         <attribute name="title">
-         <string>Status</string>
+         <string>Scans</string>
         </attribute>
         <layout class="QFormLayout" name="formLayout">
          <property name="fieldGrowthPolicy">
           <enum>QFormLayout::FieldsStayAtSizeHint</enum>
          </property>
-         <item row="2" column="0">
+         <item row="0" column="0">
           <widget class="QLabel" name="label">
            <property name="text">
             <string>Scan:</string>
            </property>
           </widget>
          </item>
-         <item row="2" column="1">
-          <widget class="QComboBox" name="comboBox">
+         <item row="0" column="1">
+          <widget class="QComboBox" name="scansAvailableCombo">
+           <property name="editable">
+            <bool>false</bool>
+           </property>
            <item>
             <property name="text">
              <string>No database loaded</string>
@@ -166,43 +156,22 @@
            </item>
           </widget>
          </item>
-         <item row="3" column="1">
-          <widget class="QPushButton" name="pushButton_2">
+         <item row="1" column="1">
+          <widget class="QPushButton" name="scanNowButton">
            <property name="text">
             <string>New scan...</string>
            </property>
           </widget>
          </item>
-         <item row="0" column="0">
-          <widget class="QLabel" name="label_2">
-           <property name="text">
-            <string>NIST:</string>
-           </property>
-          </widget>
-         </item>
-         <item row="0" column="1">
-          <widget class="QLabel" name="label_3">
-           <property name="text">
-            <string>No NIST data</string>
-           </property>
-          </widget>
-         </item>
-         <item row="1" column="1">
-          <widget class="QPushButton" name="pushButton_3">
-           <property name="text">
-            <string>Add NIST...</string>
-           </property>
-          </widget>
-         </item>
-         <item row="4" column="0">
+         <item row="2" column="0">
           <widget class="QLabel" name="label_4">
            <property name="text">
             <string>Scan date:</string>
            </property>
           </widget>
          </item>
-         <item row="4" column="1">
-          <widget class="QLineEdit" name="lineEdit_2">
+         <item row="2" column="1">
+          <widget class="QLineEdit" name="scanDateLabel">
            <property name="enabled">
             <bool>false</bool>
            </property>
@@ -211,21 +180,21 @@
            </property>
           </widget>
          </item>
-         <item row="5" column="0">
+         <item row="3" column="0">
           <widget class="QLabel" name="label_5">
            <property name="text">
             <string>Files:</string>
            </property>
           </widget>
          </item>
-         <item row="5" column="1">
-          <widget class="QLineEdit" name="lineEdit_3">
+         <item row="3" column="1">
+          <widget class="QLineEdit" name="scanFilesCountLabel">
            <property name="readOnly">
             <bool>true</bool>
            </property>
           </widget>
          </item>
-         <item row="6" column="1">
+         <item row="4" column="1">
           <widget class="QPushButton" name="pushButton_4">
            <property name="text">
             <string>Remove scan...</string>
@@ -238,14 +207,71 @@
         <attribute name="title">
          <string>Settings</string>
         </attribute>
+        <layout class="QFormLayout" name="formLayout_6">
+         <property name="fieldGrowthPolicy">
+          <enum>QFormLayout::FieldsStayAtSizeHint</enum>
+         </property>
+         <item row="0" column="0">
+          <widget class="QLabel" name="NSRL">
+           <property name="text">
+            <string>NSRL:</string>
+           </property>
+          </widget>
+         </item>
+         <item row="0" column="1">
+          <widget class="QLabel" name="nsrlStatusLabel">
+           <property name="text">
+            <string>NSRL status</string>
+           </property>
+          </widget>
+         </item>
+         <item row="1" column="1">
+          <widget class="QPushButton" name="nsrlAddUpdateButton">
+           <property name="text">
+            <string>Add NSRL data</string>
+           </property>
+          </widget>
+         </item>
+         <item row="2" column="0">
+          <widget class="QLabel" name="label_2">
+           <property name="text">
+            <string>Base Path:</string>
+           </property>
+          </widget>
+         </item>
+         <item row="2" column="1">
+          <widget class="QLineEdit" name="lineEdit_2">
+           <property name="enabled">
+            <bool>false</bool>
+           </property>
+           <property name="readOnly">
+            <bool>true</bool>
+           </property>
+          </widget>
+         </item>
+        </layout>
        </widget>
+      </widget>
+     </item>
+     <item>
+      <widget class="QProgressBar" name="progressBar">
+       <property name="autoFillBackground">
+        <bool>false</bool>
+       </property>
+       <property name="value">
+        <number>24</number>
+       </property>
+       <property name="invertedAppearance">
+        <bool>false</bool>
+       </property>
       </widget>
      </item>
     </layout>
     <zorder>label_2</zorder>
     <zorder>lineEdit</zorder>
     <zorder>horizontalLayoutWidget_3</zorder>
-    <zorder>databaseTab</zorder>
+    <zorder>databaseTabs</zorder>
+    <zorder>progressBar</zorder>
    </widget>
   </widget>
   <action name="actionItem_1">

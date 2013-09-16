@@ -1,17 +1,32 @@
-nist
-- id
-- basename
-- md5
+nsrl_prod
+- prod_code
+- prod_name
+- prod_ver
+- os_code
+- mfg_code
+- lang
+
+nsrl_file
 - sha1
-- nistdb_version
+- md5
+- basename
+- filesize
+- prod_code
+- os_code
+- special_code
+
+scans
+- id
+- name
+- date
 
 files
 - id
+- scan_id
 - path
 - basename
 - md5
 - sha1
-- last_seen_date
 
 settings
 - key

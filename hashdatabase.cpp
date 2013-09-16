@@ -1,94 +1,111 @@
 #include "hashdatabase.h"
+#include "sqlexception.h"
 
 #include <iostream>
+
+#include <boost/make_shared.hpp>
+#include <boost/shared_ptr.hpp>
+using boost::shared_ptr;
 
 HashDatabase::HashDatabase()
 {
     // Create an in-memory database
-    int err = sqlite3_open("", &db);
+    int err = sqlite3_open("", &mDb);
     if(err) {
         // TODO: unable to open
+        std::cerr << "Unable to open in-memory database: " << sqlite3_errmsg(mDb) << std::endl;
     }
 }
 
 HashDatabase::HashDatabase(string dbPath)
 {
     // Only open existing databases
-    int err = sqlite3_open_v2(dbPath.c_str(), &db, SQLITE_OPEN_READWRITE, NULL);
+    int err = sqlite3_open_v2(dbPath.c_str(), &mDb, SQLITE_OPEN_READWRITE, nullptr);
     if(err) {
         // TODO: unable to open
+        std::cerr << "Unable to open database: " << sqlite3_errmsg(mDb) << std::endl;
     }
 }
 
 HashDatabase::~HashDatabase()
 {
-    if(db != NULL) {
-        sqlite3_close(db);
-        db = NULL;
+    if(mDb != nullptr) {
+        sqlite3_close(mDb);
+        mDb = nullptr;
     }
 }
 
-HashDatabase *HashDatabase::createNew(string dbPath)
+shared_ptr<HashDatabase> HashDatabase::createNew(string dbPath)
 {
     // TODO: refuse to overwrite existing file?
+    // TODO ensure db is closed during exceptions
 
     // Create db with schema
-    sqlite3 *db = NULL;
+    sqlite3 *db = nullptr;
     int err = sqlite3_open(dbPath.c_str(), &db);
     if(err) {
-        // TODO throw exception
-        return NULL;
+        throw SQLException("Unable to open database for creation", sqlite3_errmsg(db));
     }
 
-    sqlite3_exec(db,"CREATE TABLE NSRLProd ("
-                        " ProductCode int unsigned NOT NULL,"
-                        " ProductName varchar(1024),"
-                        " ProductVersion varchar(1024),"
-                        " OpSystemCode varchar(255),"
-                        " MfgCode varchar(100),"
-                        " Language varchar(1024),"
-                     ")", NULL, NULL, NULL);
+    err = sqlite3_exec(db,"CREATE TABLE nsrl_prod ("
+                            " ProductCode int unsigned NOT NULL,"
+                            " ProductName varchar(1024),"
+                            " ProductVersion varchar(1024),"
+                            " OpSystemCode varchar(255),"
+                            " MfgCode varchar(100),"
+                            " Language varchar(1024)"
+                          ")", nullptr, nullptr, nullptr);
+    if(err) {
+        sqlite3_close(db);
+        throw SQLException("Unable to create NSRL product table: ", sqlite3_errmsg(db));
+    }
 
-    /*CREATE TABLE IF NOT EXISTS NSRLFile (
-            SHA1 char(41),
-            MD5 char(32),
-            CRC32 char(32),
-            FileName varchar(1024),
-            FileSize varchar(1024),
-            ProductCode int unsigned,
-            OpSystemCode varchar(255),
-            Specialcode varchar(255),
-            INDEX sha_index (SHA1)
-        ) ENGINE=innodb DEFAULT CHARSET=utf8;
-        CREATE TABLE IF NOT EXISTS systems (
-            comp_id int unsigned NOT NULL AUTO_INCREMENT,
-            name varchar(100) NOT NULL,
-            PRIMARY KEY (comp_id),
-            UNIQUE INDEX (name)
-        ) ENGINE=innodb DEFAULT CHARSET=utf8;
-        CREATE TABLE IF NOT EXISTS current_files (
-            comp_id int unsigned NOT NULL,
-            SHA1 char(41) NOT NULL,
-            record_date timestamp NOT NULL DEFAULT NOW(),
-            path varchar(1024) NOT NULL,
-            path_hash char(32) NOT NULL,
-            found bit DEFAULT false,
-            FOREIGN KEY (comp_id) REFERENCES systems (comp_id) ON DELETE CASCADE,
-            INDEX (comp_id, SHA1),
-            INDEX (comp_id),
-            UNIQUE INDEX (comp_id, path_hash)
-        ) ENGINE=innodb DEFAULT CHARSET=utf8;
-        CREATE TABLE IF NOT EXISTS reports (
-            report_id int unsigned NOT NULL AUTO_INCREMENT,
-            comp_id int unsigned NOT NULL,
-            report_date timestamp NOT NULL DEFAULT NOW(),
-            report mediumtext NOT NULL,
-            PRIMARY KEY (report_id),
-            FOREIGN KEY (comp_id) REFERENCES systems (comp_id) ON DELETE CASCADE
-        ) ENGINE=innodb DEFAULT CHARSET=utf8;" | $SQL_CMD
-        */
+    sqlite3_exec(db, "CREATE TABLE nsrl_file ("
+                            " SHA1 char(41),"
+                            " MD5 char(32),"
+                            " CRC32 char(32),"
+                            " FileName varchar(1024),"
+                            " FileSize varchar(1024),"
+                            " ProductCode int unsigned,"
+                            " OpSystemCode varchar(255),"
+                            " Specialcode varchar(255)"
+                        ")", nullptr, nullptr, nullptr);
+    if(err) {
+        sqlite3_close(db);
+        throw SQLException("Unable to create NSRL file table: ", sqlite3_errmsg(db));
+    }
 
+    sqlite3_exec(db, "CREATE TABLE scans ("
+                            " id integer PRIMARY KEY,"
+                            " name varchar(100) UNIQUE,"
+                            " date datetime"
+                        ")", nullptr, nullptr, nullptr);
+    if(err) {
+        sqlite3_close(db);
+        throw SQLException("Unable to create scans table: ", sqlite3_errmsg(db));
+    }
 
+    sqlite3_exec(db, "CREATE TABLE files ("
+                             "id integer PRIMARY KEY, "
+                             "scan_id integer REFERENCES scans (id) ON DELETE CASCADE, "
+                             "path text, "
+                             "basename text, "
+                             "md5 char(32), "
+                             "sha1 char(32) "
+                         ")", nullptr, nullptr, nullptr);
+    if(err) {
+        sqlite3_close(db);
+        throw SQLException("Unable to create files table: ", sqlite3_errmsg(db));
+    }
+
+    sqlite3_exec(db, "CREATE TABLE settings ("
+                             "key char(10), "
+                             "value varchar(255)"
+                         ")", nullptr, nullptr, nullptr);
+    if(err) {
+        sqlite3_close(db);
+        throw SQLException("Unable to create settings table: ", sqlite3_errmsg(db));
+    }
 
     // Done
     if(sqlite3_close(db)) {
@@ -99,8 +116,12 @@ HashDatabase *HashDatabase::createNew(string dbPath)
     return open(dbPath);
 }
 
-HashDatabase *HashDatabase::open(string dbPath)
+shared_ptr<HashDatabase> HashDatabase::open(string dbPath)
 {
-    HashDatabase *newDb = new HashDatabase(dbPath);
-    return newDb;
+    return boost::make_shared<HashDatabase>(dbPath);
+}
+
+shared_ptr<Scan> HashDatabase::addScan(string name)
+{
+    return Scan::addScan(shared_from_this(), name);
 }

@@ -2,15 +2,19 @@
 #include "ui_filelistwindow.h"
 
 #include "hashdatabase.h"
+#include "sqlexception.h"
 
 #include <iostream>
+#include <list>
+
+#include <boost/shared_ptr.hpp>
+using boost::shared_ptr;
 
 #include <QFileDialog>
 #include <QString>
 
 FileListWindow::FileListWindow(QWidget *parent) :
     QMainWindow(parent),
-    db(NULL),
     ui(new Ui::FileListWindow)
 {
     ui->setupUi(this);
@@ -18,64 +22,136 @@ FileListWindow::FileListWindow(QWidget *parent) :
 
 FileListWindow::~FileListWindow()
 {
-    if(db) {
-        delete db;
-    }
-
     delete ui;
 }
 
-void FileListWindow::on_createButton_clicked()
+void FileListWindow::updateUISidebar()
 {
-    createDatabase();
+    // Ensure that sidebar reflects current DB state
+    if(db) {
+        // NSRL in database?
+        if(db->hasNSRLData()) {
+            ui->nsrlAddUpdateButton->setText(tr("Update NSRL data"));
+        }
+        else {
+            ui->nsrlAddUpdateButton->setText(tr("Add NSRL data"));
+        }
+
+        ui->scanDateLabel->setText("");
+        ui->scanFilesCountLabel->setText("");
+
+        // Scan list
+        ui->scansAvailableCombo->clear();
+        std::list<shared_ptr<Scan>> scans = db->getAllScans();
+        for(shared_ptr<Scan> scan : scans) {
+            ui->scansAvailableCombo->addItem(scan->getName().c_str());
+        }
+
+        // All values updated, ready for user to interact
+        ui->databaseTabs->setEnabled(true);
+    }
+    else {
+        ui->databaseTabs->setEnabled(false);
+
+        ui->nsrlAddUpdateButton->setText(tr("Add NSRL data"));
+
+        ui->scanDateLabel->setText("");
+        ui->scanFilesCountLabel->setText("");
+        ui->scansAvailableCombo->clear();
+        ui->scansAvailableCombo->addItem(tr("No database loaded"));
+    }
 }
 
-void FileListWindow::createDatabase()
+void FileListWindow::createDatabasePrompt()
 {
     // Open dialog to allow user to select where to save database
     QString dbPath;
     dbPath = QFileDialog::getSaveFileName(this, "Save new database", "", "Hasher database files (*.hashdb)");
 
-    // Create!
-    HashDatabase *db = HashDatabase::createNew(dbPath.toStdString());
+    if(!dbPath.isEmpty()) {
+        // Create!
+        boost::shared_ptr<HashDatabase> db = HashDatabase::createNew(dbPath.toStdString());
 
     // Immediately open the new database
-    openDatabase(db);
+        openDatabase(db);
+    }
 }
 
-void FileListWindow::openDatabase(HashDatabase *alreadyOpenDb)
+void FileListWindow::openDatabasePrompt()
+{
+    // Open dialog to allow user to select where to save database
+    QString dbPath;
+    dbPath = QFileDialog::getOpenFileName(this, "Select database", "", "Hasher database files (*.hashdb)");
+
+    if(!dbPath.isEmpty()) {
+        openDatabase(dbPath);
+    }
+}
+
+void FileListWindow::openDatabase(boost::shared_ptr<HashDatabase> alreadyOpenDb)
 {
     // TODO replace hashdb pointers with boost smart pointers
     // If passed a null pointer, just close everything
-    if(alreadyOpenDb == NULL) {
+    if(alreadyOpenDb == nullptr) {
         closeDatabase();
         return;
     }
 
-    // If a database is already open, close it
-    if(db != NULL && db != alreadyOpenDb) {
-        delete db;
-        db = NULL;
-    }
-
+    // Overwrite any existing database
     db = alreadyOpenDb;
 
-    // TODO Enable UI and populate with current data
+    // Enable UI and populate with current data
+    updateUISidebar();
 }
 
 void FileListWindow::openDatabase(QString dbPath)
 {
-    HashDatabase *db = HashDatabase::open(dbPath.toStdString());
+    boost::shared_ptr<HashDatabase> db = HashDatabase::open(dbPath.toStdString());
     openDatabase(db);
 }
 
 void FileListWindow::closeDatabase()
 {
     // Close existing db
-    if(db != NULL) {
-        delete db;
-        db = NULL;
-    }
+    // TODO does this cause the pointer to lose the reference? (that's the goal)
+    db.reset();
 
-    // TODO Disable UI
+    // Disable UI
+    updateUISidebar();
+}
+
+void FileListWindow::on_createButton_clicked()
+{
+    createDatabasePrompt();
+}
+
+void FileListWindow::on_openButton_clicked()
+{
+    openDatabasePrompt();
+}
+
+void FileListWindow::on_nsrlAddUpdateButton_clicked()
+{
+    // Check for newest version of NSRL database and compare to ours
+    //
+}
+
+void FileListWindow::on_dbControlDock_visibilityChanged(bool visible)
+{
+    if(visible) {
+        updateUISidebar();
+    }
+}
+
+void FileListWindow::on_scanNowButton_clicked()
+{
+    // TODO open a scan wizard of some kind?
+    try {
+        shared_ptr<Scan> scan = db->addScan("test");
+        ui->scansAvailableCombo->addItem(scan->getName().c_str());
+        ui->scansAvailableCombo->setCurrentText(scan->getName().c_str());
+    }
+    catch(SQLException e) {
+        std::cerr << e << std::endl;
+    }
 }
