@@ -18,6 +18,7 @@ FileListWindow::FileListWindow(QWidget *parent) :
     ui(new Ui::FileListWindow)
 {
     ui->setupUi(this);
+    ui->databaseTabs->setCurrentIndex(0);
 }
 
 FileListWindow::~FileListWindow()
@@ -29,6 +30,11 @@ void FileListWindow::updateUISidebar()
 {
     // Ensure that sidebar reflects current DB state
     if(db) {
+        // ------------
+        // Scans tab
+        // File name
+        ui->dbFilePath->setText(db->getDatabasePath().c_str());
+
         // NSRL in database?
         if(db->hasNSRLData()) {
             ui->nsrlAddUpdateButton->setText(tr("Update NSRL data"));
@@ -45,6 +51,23 @@ void FileListWindow::updateUISidebar()
         std::list<shared_ptr<Scan>> scans = db->getAllScans();
         for(shared_ptr<Scan> scan : scans) {
             ui->scansAvailableCombo->addItem(scan->getName().c_str());
+        }
+
+        // ------------
+        // Settings tab
+        // Base path
+        ui->scanBasePath->setText(QString::fromStdString(db->getBasePath()));
+        if(scans.empty()) {
+            ui->basePathChangeWarning->setVisible(false);
+            ui->scanBasePath->setEnabled(true);
+            ui->scanBasePath->setReadOnly(false);
+            ui->basePathBrowse->setEnabled(true);
+        }
+        else {
+            ui->basePathChangeWarning->setVisible(true);
+            ui->scanBasePath->setEnabled(false);
+            ui->scanBasePath->setReadOnly(true);
+            ui->basePathBrowse->setEnabled(false);
         }
 
         // All values updated, ready for user to interact
@@ -158,8 +181,28 @@ void FileListWindow::on_scanNowButton_clicked()
     // TODO open a scan wizard of some kind?
     try {
         shared_ptr<Scan> scan = db->addScan("test");
-        ui->scansAvailableCombo->addItem(scan->getName().c_str());
-        ui->scansAvailableCombo->setCurrentText(scan->getName().c_str());
+        scan->performScan();
+        updateUISidebar();
+    }
+    catch(SQLException e) {
+        std::cerr << e << std::endl;
+    }
+}
+
+void FileListWindow::on_scanBasePath_editingFinished()
+{
+    db->setBasePath(ui->scanBasePath->text().toStdString());
+}
+
+void FileListWindow::on_basePathBrowse_clicked()
+{
+    QString basePath = QFileDialog::getExistingDirectory(this, "Select base scan path", "/");
+
+    try {
+        if(!basePath.isEmpty()) {
+            db->setBasePath(basePath.toStdString());
+            updateUISidebar();
+        }
     }
     catch(SQLException e) {
         std::cerr << e << std::endl;

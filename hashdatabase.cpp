@@ -9,22 +9,17 @@
 using boost::shared_ptr;
 
 HashDatabase::HashDatabase()
+    : HashDatabase("")
 {
-    // Create an in-memory database
-    int err = sqlite3_open("", &mDb);
-    if(err) {
-        // TODO: unable to open
-        std::cerr << "Unable to open in-memory database: " << sqlite3_errmsg(mDb) << std::endl;
-    }
 }
 
 HashDatabase::HashDatabase(string dbPath)
+    : mDbPath(dbPath)
 {
     // Only open existing databases
     int err = sqlite3_open_v2(dbPath.c_str(), &mDb, SQLITE_OPEN_READWRITE, nullptr);
     if(err) {
-        // TODO: unable to open
-        std::cerr << "Unable to open database: " << sqlite3_errmsg(mDb) << std::endl;
+        throw SQLException("Unable to open database", sqlite3_errmsg(mDb));
     }
 }
 
@@ -96,7 +91,7 @@ shared_ptr<HashDatabase> HashDatabase::createNew(string dbPath)
     }
 
     sqlite3_exec(db, "CREATE TABLE settings ("
-                             "key char(10), "
+                             "key char(10) PRIMARY KEY, "
                              "value varchar(255)"
                          ")", nullptr, nullptr, nullptr);
     if(err) {
@@ -122,4 +117,72 @@ shared_ptr<HashDatabase> HashDatabase::open(string dbPath)
 shared_ptr<Scan> HashDatabase::addScan(string name)
 {
     return Scan::addScan(shared_from_this(), name);
+}
+
+const string HashDatabase::getSetting(const string &key)
+{
+    string sql = "SELECT value FROM settings WHERE key=?";
+    sqlite3_stmt *stmt = nullptr;
+
+    if(sqlite3_prepare_v2(mDb, sql.c_str(), sql.length(), &stmt, NULL)) {
+        throw SQLException("Unable to prepare to get setting: ", sqlite3_errmsg(mDb));
+    }
+
+    if(sqlite3_bind_text(stmt, 1, key.c_str(), key.length(), NULL)) {
+        throw SQLException("Unable to bind key to get setting: ", sqlite3_errmsg(mDb));
+    }
+
+    string value = "";
+    if(sqlite3_step(stmt) == SQLITE_ROW) {
+        const char *cVal = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 0));
+        if(cVal != nullptr) {
+            value = cVal;
+        }
+    }
+
+    sqlite3_finalize(stmt);
+
+    return value;
+}
+
+const string HashDatabase::setSetting(const string &key, const string &value)
+{
+    string old = getSetting(key);
+    if(old == value) {
+        // No change
+        return old;
+    }
+
+    string sql = "INSERT OR REPLACE INTO settings ('key', 'value') VALUES (?, ?)";
+    sqlite3_stmt *stmt = nullptr;
+
+    if(sqlite3_prepare_v2(mDb, sql.c_str(), sql.length(), &stmt, NULL)) {
+        throw SQLException("Unable to prepare to set setting: ", sqlite3_errmsg(mDb));
+    }
+
+    if(sqlite3_bind_text(stmt, 1, key.c_str(), key.length(), NULL)) {
+        throw SQLException("Unable to bind key to set setting: ", sqlite3_errmsg(mDb));
+    }
+
+    if(sqlite3_bind_text(stmt, 2, value.c_str(), value.length(), NULL)) {
+        throw SQLException("Unable to bind value to set setting: ", sqlite3_errmsg(mDb));
+    }
+
+    if(sqlite3_step(stmt) != SQLITE_DONE) {
+        throw SQLException("Unable to set setting: ", sqlite3_errmsg(mDb));
+    }
+
+    sqlite3_finalize(stmt);
+
+    return old;
+}
+
+const string HashDatabase::getBasePath()
+{
+    return getSetting("base_path");
+}
+
+void HashDatabase::setBasePath(const string &path)
+{
+    setSetting("base_path", path);
 }

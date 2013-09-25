@@ -22,7 +22,17 @@ public:
     static shared_ptr<HashDatabase> createNew(string dbPath);
     static shared_ptr<HashDatabase> open(string dbPath);
 
-    bool hasNSRLData() { return false; }
+    // Misc
+    const string &getDatabasePath() const { return mDbPath; }
+
+    const string getSetting(const string &key);
+    const string setSetting(const string &key, const string &value);
+
+    const string getBasePath();
+    void setBasePath(const string &path);
+
+    // NSRL
+    bool hasNSRLData() const { return false; }
 
     // Manage scans
     shared_ptr<Scan> addScan(string name);
@@ -34,6 +44,7 @@ public:
 private:
     HashDatabase();
 
+    string mDbPath;
     sqlite3 *mDb;
 };
 

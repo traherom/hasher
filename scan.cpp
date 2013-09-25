@@ -77,6 +77,13 @@ shared_ptr<Scan> Scan::addScan(shared_ptr<HashDatabase> parentDb, string name)
     return boost::make_shared<Scan>(parentDb, sqlite3_last_insert_rowid(db));
 }
 
+shared_ptr<Scan> Scan::addAndPerformScan(shared_ptr<HashDatabase> parentDb, string name)
+{
+    shared_ptr<Scan> scan = addScan(parentDb, name);
+    scan->performScan();
+    return scan;
+}
+
 std::list<shared_ptr<Scan>> Scan::getAllScans(shared_ptr<HashDatabase> parentDb)
 {
     std::list<shared_ptr<Scan>> scans;
@@ -110,4 +117,10 @@ void Scan::populateCacheValues(sqlite3_stmt *stmt)
     mId = sqlite3_column_int(stmt, 1);
     mName = string(reinterpret_cast<const char*>(sqlite3_column_text(stmt, 2)));
     mDate = sqlite3_column_int(stmt, 3);
+}
+
+void Scan::performScan()
+{
+    auto db = mParentDb->getDatabase();
+
 }

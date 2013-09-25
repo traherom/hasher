@@ -84,7 +84,7 @@
         <enum>QLayout::SetDefaultConstraint</enum>
        </property>
        <item>
-        <widget class="QLineEdit" name="lineEdit">
+        <widget class="QLineEdit" name="dbFilePath">
          <property name="enabled">
           <bool>false</bool>
          </property>
@@ -118,7 +118,7 @@
         <enum>QTabWidget::Rounded</enum>
        </property>
        <property name="currentIndex">
-        <number>0</number>
+        <number>1</number>
        </property>
        <property name="usesScrollButtons">
         <bool>false</bool>
@@ -240,12 +240,30 @@
           </widget>
          </item>
          <item row="2" column="1">
-          <widget class="QLineEdit" name="lineEdit_2">
-           <property name="enabled">
-            <bool>false</bool>
-           </property>
-           <property name="readOnly">
-            <bool>true</bool>
+          <layout class="QHBoxLayout" name="horizontalLayout_4">
+           <item>
+            <widget class="QLineEdit" name="scanBasePath">
+             <property name="enabled">
+              <bool>false</bool>
+             </property>
+             <property name="readOnly">
+              <bool>false</bool>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QPushButton" name="basePathBrowse">
+             <property name="text">
+              <string>Browse...</string>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </item>
+         <item row="3" column="1">
+          <widget class="QLabel" name="basePathChangeWarning">
+           <property name="text">
+            <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;Remove all scans to&lt;br/&gt;change scan base path.&lt;/body&gt;&lt;/html&gt;</string>
            </property>
           </widget>
          </item>
@@ -267,11 +285,6 @@
       </widget>
      </item>
     </layout>
-    <zorder>label_2</zorder>
-    <zorder>lineEdit</zorder>
-    <zorder>horizontalLayoutWidget_3</zorder>
-    <zorder>databaseTabs</zorder>
-    <zorder>progressBar</zorder>
    </widget>
   </widget>
   <action name="actionItem_1">

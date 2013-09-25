@@ -31,6 +31,10 @@ private slots:
 
     void on_scanNowButton_clicked();
 
+    void on_scanBasePath_editingFinished();
+
+    void on_basePathBrowse_clicked();
+
 private:
     void createDatabasePrompt();
     void openDatabasePrompt();
